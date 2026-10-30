@@ -17,7 +17,7 @@
   "packagePath": "foxit",
   "scripts": {
     "start": "pluggable-widgets-tools start:server",
-    "dev": "pluggable-widgets-tools start:web",
+    "dev": "node scripts/dev-web.cjs start:web",
     "build": "pluggable-widgets-tools build:web",
     "lint": "pluggable-widgets-tools lint",
     "lint:fix": "pluggable-widgets-tools lint:fix",

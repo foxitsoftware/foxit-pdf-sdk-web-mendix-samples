@@ -19,3 +19,5 @@ mendixProject
 **/screenshot-results
 **/tests/testProject
 **/artifacts
+
+.DS_Store
