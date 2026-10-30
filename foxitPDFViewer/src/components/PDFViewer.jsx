@@ -3,6 +3,53 @@ import { createElement, useRef, useEffect, useState } from "react";
 import loadStyleLink from "../shared/loadStyleLink";
 
 const libPath = "/resources/@foxitsoftware/foxit-pdf-sdk-for-web-library/lib/";
+const pdfViewCtrlSrc = libPath + "PDFViewCtrl.full.js";
+
+function loadPDFViewCtrl() {
+  if (window.PDFViewCtrl) {
+    return Promise.resolve(window.PDFViewCtrl);
+  }
+  if (window.__foxitPDFViewCtrlLoading) {
+    return window.__foxitPDFViewCtrlLoading;
+  }
+
+  window.__foxitPDFViewCtrlLoading = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = pdfViewCtrlSrc;
+    script.async = false;
+
+    // PDFViewCtrl.full.js is UMD. If an AMD define is present it will not
+    // attach PDFViewCtrl to window, so clear define.amd only while this script runs.
+    const amdDefine = window.define;
+    const previousAmd = amdDefine && amdDefine.amd;
+    if (previousAmd) {
+      amdDefine.amd = undefined;
+    }
+    const restoreAmd = () => {
+      if (previousAmd) {
+        amdDefine.amd = previousAmd;
+      }
+    };
+
+    script.onload = () => {
+      restoreAmd();
+      if (window.PDFViewCtrl) {
+        resolve(window.PDFViewCtrl);
+        return;
+      }
+      reject(new Error("PDFViewCtrl was not found after loading " + pdfViewCtrlSrc));
+    };
+    script.onerror = () => {
+      restoreAmd();
+      window.__foxitPDFViewCtrlLoading = null;
+      reject(new Error("Failed to load " + pdfViewCtrlSrc));
+    };
+    document.head.appendChild(script);
+  });
+
+  return window.__foxitPDFViewCtrlLoading;
+}
+
 export default function PDFViewer(props) {
   loadStyleLink(libPath + 'PDFViewCtrl.css');
 
@@ -11,14 +58,20 @@ export default function PDFViewer(props) {
   const [viewer, setViewer] = useState(null);
 
   useEffect(() => {
-    if (window.PDFViewCtrl) {
-      return;
-    }
-
-    window.dojoDynamicRequire([libPath + 'PDFViewCtrl.full.js'], function (PDFViewCtrl) {
-      setPDFViewCtrl(PDFViewCtrl);
-    })
-  })
+    let cancelled = false;
+    loadPDFViewCtrl()
+      .then(PDFViewCtrl => {
+        if (!cancelled) {
+          setPDFViewCtrl(() => PDFViewCtrl);
+        }
+      })
+      .catch(error => {
+        console.error(error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!_PDFViewCtrl || !viewerRef.current || viewer) {
@@ -42,7 +95,7 @@ export default function PDFViewer(props) {
     pdfViewer.init(ePdfViewer);
 
     setViewer(pdfViewer);
-  });
+  }, [_PDFViewCtrl, viewer]);
 
   useEffect(() => {
     if (!viewer) {

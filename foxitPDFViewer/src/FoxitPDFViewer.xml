@@ -24,7 +24,7 @@
                 <caption>instanceID</caption>
                 <description>PDFViewer Specifies the id of multiple instances</description>
             </property>
-            <property key="height" type="string" required="true" defaultValue="calc(100% - 150px)">
+            <property key="height" type="string" required="true" defaultValue="calc(100vh - 150px)">
                 <caption>height</caption>
                 <description>PDFViewer height</description>
             </property>
